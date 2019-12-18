@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
+    <title>vpkg registry</title>
+</head>
+<body class="font-sans min-h-screen bg-white border-t-8 border-blue-500">
+    <div class="max-w-6xl flex flex-col md:flex-row px-2 py-8 mx-auto">
+        <section class="w-full md:w-1/4 pb-8 flex flex-col flex-wrap">
+            <div class="px-3 py-6">
+                <h1 class="text-center md:text-left text-4xl mb-4">vpkg <span class="text-gray-700">registry</span></h1>
+                <p class="text-center md:text-left text-lg max-w-2xl mx-auto mb-4">An alternative package registry for managing and publishing your V modules. It's free, simple, and straightforward to use.</p>
+    
+                <div class="flex flex-col mb-8">
+                    <a href="https://github.com/vpkg-project/registry" class="w-full text-center text-md bg-blue-500 hover:bg-blue-700 border-b-4 border-blue-700 font-bold text-white rounded px-6 py-4">Contribute on Github</a>
+                </div>
+
+                <h3 class="text-2xl mb-3 text-gray-600">How to submit?</h3>
+                <p class="mb-4">Fork the <a class="underline text-blue-500" href="https://github.com/v-pkg/registry/">registry</a>, edit registry.json, and create a pull request. </p>
+                <p class="mb-2">Your module must have the following information:</p>
+                <ul class="mb-4">
+                    <li><span class="bg-gray-300 p-1 rounded font-mono mb-4">name</span> - Name of the module.</li>
+                    <li><span class="bg-gray-300 p-1 rounded font-mono mb-4">url</span> - URL to be used to retrieve the package.</li>
+                    <li><span class="bg-gray-300 p-1 rounded font-mono mb-4">method</span> - The method of downloading the package. (vpkg only supports git for now.)</li>
+                </ul>
+                <p class="mb-4">You can modify the information of your published module. However, it must not have conflicts with other modules to avoid confusion.</p>
+                <p>To prevent this, we suggest to finalize everything before submitting.</p>
+            </div>
+        </section>
+        <section id="packages" class="w-full md:w-3/4 pl-4 pt-8 pb-16 flex flex-col text-center md:text-left min-h-screen">
+            <div class="w-full flex flex-col items-center pb-8 p-2">
+                <h2 class="text-3xl text-left mb-4 text-gray-700 font-normal">{{ numberOfPackages }} packages found.</h2>
+                <input type="text" placeholder="Search modules/packages..." v-model="searchQuery" class="w-full p-4 rounded bg-white border border-gray-500 shadow-none focus:shadow-md" />
+            </div>
+            <div v-if="!isLoading" class="w-full flex flex-col flex-wrap">
+                <div class="w-full p-2" :key="package.name" v-for="package in filteredPackages">
+                    <div class="rounded border border-gray-500 hover:border-gray-700 p-4">
+                        <h3 class="text-2xl mb-3 text-gray-600">{{ package.name }}</h3>
+                        <code class="bg-gray-300 w-full px-4 py-2 block rounded font-mono mb-4">
+                            vpkg get {{ package.name }}
+                        </code>
+                        <a :href="package.url" class="text-underline text-sm text-gray-600 hover:text-gray-700">{{ package.url }}</a>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="w-full py-16 text-center">
+                <h2 class="text-gray-600 font-bold text-4xl">Loading...</h2>
+            </div>
+        </section>
+    </div>
+    <footer class="bg-gray-200 py-3 w-full">
+        <div class="max-w-5xl mx-auto px-2 text-center">
+            &copy; 2019 <a href="https://nedpals.xyz">Ned Palacios</a> / <a href="https://github.com/vpkg-project">vpkg project</a>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.0"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+        new Vue({
+            el: "#packages",
+            mounted() {
+                var server = window.location.origin + window.location.pathname;
+                var vm = this;
+                
+                axios.get(server + "/registry.json")
+                    .then(function (response) {
+                        vm.packages = response.data.packages;
+                        vm.isLoading = false;
+                    })
+                    .catch(function(err) { console.log(err); });
+            },
+            data: { packages: [], searchQuery: "", isLoading: true },
+            computed: {
+                numberOfPackages() { var len = this.packages.length; return len === 0 ? 0 : len; },
+                filteredPackages() {
+                    var packages = this.packages;
+                    var query = this.searchQuery;
+
+                    if (query.length > 1) {
+                        packages = packages.filter(function(pkg) {
+                            return pkg.name.indexOf(query) !== -1;
+                        });
+                    }
+
+                    return packages.sort(function(a, b) {
+                        var c = a.name.toLowerCase();
+                        var n = b.name.toLowerCase();
+                        if (c < n) { return -1; }
+                        if (c > n) { return 1; }
+                        return 0;
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
